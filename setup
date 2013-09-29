@@ -1,0 +1,6 @@
+virtualenv .py27
+. .py27/bin/activate
+pip install flask pyjade nose
+
+run test
+.py27/bin/nosetests

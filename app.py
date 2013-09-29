@@ -1,9 +1,10 @@
 from flask import Flask, jsonify, request, Response, render_template
 import os
 
-template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
-app = Flask(__name__, template_folder=template_dir)
+
+app = Flask(__name__)
 app.debug = True
+app.jinja_env.add_extension('pyjade.ext.jinja.PyJadeExtension')
 
 
 @app.route("/")
@@ -52,20 +53,20 @@ def too_big_number(number):
 
 @app.route("/primeFactors/ui")
 def ui():
-    return render_template('hello.html')
+    return render_template('ui.jade')
 
 
 @app.route("/primeFactors/result")
 def ui_result():
     requestParam = request.args.get('number')
     if not is_an_int(requestParam):
-        return render_template('result.html', result=requestParam + " is not a number")
+        return render_template('result.jade', result=requestParam + " is not a number")
 
     number = int(requestParam)
     if number > 1000000:
-        return render_template('result.html', result="too big number (>1e6)")
+        return render_template('result.jade', result="too big number (>1e6)")
     if number < 1:
-        return render_template('result.html', result=str(number) + " is not an integer > 1")
+        return render_template('result.jade', result=str(number) + " is not an integer > 1")
     decomposition = decompose(number)
     result = str(number) + " = "
     for index, d in enumerate(decomposition):
@@ -73,7 +74,7 @@ def ui_result():
         if index is not (len(decomposition) - 1):
             result += " x "
 
-    return render_template('result.html', result=result)
+    return render_template('result.jade', result=result)
 
 
 def is_an_int(string):
