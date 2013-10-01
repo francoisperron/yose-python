@@ -1,6 +1,4 @@
 from flask import Flask, jsonify, request, Response, render_template
-import os
-
 
 app = Flask(__name__)
 app.debug = True
@@ -13,16 +11,24 @@ def alive():
 
 
 @app.route("/primeFactors")
-def primeFactors():
-    requestParam = request.args.get('number')
-    if not requestParam.isdigit():
-        return not_a_number_response(requestParam)
+def prime_factors():
+    response = []
+    requested_numbers = request.values.getlist('number')
+    for requested_number in requested_numbers:
+        print "NUMBER: " + requested_number
+        if not requested_number.isdigit():
+            response.append("{\"number\":\"" + requested_number + "\",\"error\":\"" + "not a number" + "\"}")
+            continue
 
-    number = int(requestParam)
-    if number > 1000000:
-        return too_big_number(number)
-    decomposition = decompose(number)
-    return build_response(decomposition, number)
+        number = int(requested_number)
+        if number > 1000000:
+            response.append("{\"number\":" + requested_number + ",\"error\":\"" + "too big number (>1e6)" + "\"}")
+            continue
+
+        decomposition = decompose(number)
+        response.append("{\"number\":" + requested_number + ",\"decomposition\":" + str(decomposition) + "}")
+
+    return build_response(response)
 
 
 def decompose(number):
@@ -34,22 +40,19 @@ def decompose(number):
     return primes
 
 
-def build_response(decomposition, number):
-    hand_build_json = "{\"number\":" + str(number) + ",\"decomposition\":" + str(decomposition) + "}"
-    response = Response(response=hand_build_json, status=200, mimetype="application/json")
+def build_response(json):
+    if len(json) == 1:
+        hand_made_json = json
+    else:
+        hand_made_json = ["["]
+        for index, response in enumerate(json):
+            hand_made_json.append(response)
+            if index is not (len(json) - 1):
+                hand_made_json.append(",")
+        hand_made_json.append("]")
+    response = Response(response=hand_made_json, status=200, mimetype="application/json")
     return response
 
-
-def not_a_number_response(request):
-    hand_build_json = "{\"number\":\"" + request + "\",\"error\":\"" + "not a number" + "\"}"
-    response = Response(response=hand_build_json, status=200, mimetype="application/json")
-    return response
-
-
-def too_big_number(number):
-    hand_build_json = "{\"number\":" + str(number) + ",\"error\":\"" + "too big number (>1e6)" + "\"}"
-    response = Response(response=hand_build_json, status=200, mimetype="application/json")
-    return response
 
 @app.route("/primeFactors/ui")
 def ui():
@@ -58,11 +61,11 @@ def ui():
 
 @app.route("/primeFactors/result")
 def ui_result():
-    requestParam = request.args.get('number')
-    if not is_an_int(requestParam):
-        return render_template('result.jade', result=requestParam + " is not a number")
+    request_param = request.args.get('number')
+    if not is_an_int(request_param):
+        return render_template('result.jade', result=request_param + " is not a number")
 
-    number = int(requestParam)
+    number = int(request_param)
     if number > 1000000:
         return render_template('result.jade', result="too big number (>1e6)")
     if number < 1:
@@ -81,7 +84,7 @@ def is_an_int(string):
     try:
         int(string)
         return True
-    except:
+    except ValueError:
         return False
 
 if __name__ == "__main__":
